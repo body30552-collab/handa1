@@ -420,10 +420,9 @@
             osc.stop(audioCtx.currentTime + 0.05);
         }
 
-        // دالة نطق اسم اللاعب صوتياً
         function speakTurn(playerName) {
             if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel(); // إيقاف أي صوت سابق
+                window.speechSynthesis.cancel();
                 const text = `عليك الدور يا ${playerName}`;
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = 'ar-SA';
@@ -485,6 +484,8 @@
             { type: 'candor', label: 'صراحة 🎯', color: '#06b6d4' },
             { type: 'farewell', label: 'فراق 💔', color: '#8b5cf6' }
         ];
+
+        let currentRotation = 0; // تتبع زاوية العجلة الحالية
 
         function drawWheel() {
             const numSlices = wheelSlices.length;
@@ -675,7 +676,7 @@
             gameStarted = true;
 
             const randomSliceIndex = Math.floor(Math.random() * wheelSlices.length);
-            const selectedType = wheelSlices[randomSliceIndex].type; // ربط القطاع بالتصنيف بدقة تامة
+            const selectedType = wheelSlices[randomSliceIndex].type;
             const question = getUniqueQuestion(selectedType);
             const player = players[currentTurnIndex].username;
 
@@ -703,11 +704,23 @@
 
             const numSlices = wheelSlices.length;
             const sliceAngle = 360 / numSlices;
-            const targetAngleDeg = 360 - (targetSliceIndex * sliceAngle + sliceAngle / 2);
-            const totalDegree = 2520 + targetAngleDeg;
+
+            // التصحيح الرياضي 100%: السهم أعلى العجلة (عند 270 درجة)
+            // حساب زاوية المنتصف بالضبط للقطاع المستهدف
+            const sliceCenterAngle = (targetSliceIndex * sliceAngle) + (sliceAngle / 2);
+            let targetDegree = 270 - sliceCenterAngle;
+            if (targetDegree < 0) targetDegree += 360;
+
+            // إضافة 7 دورات كاملة (2520 درجة)
+            const rounds = 7;
+            const currentMod = currentRotation % 360;
+            let addDegree = targetDegree - currentMod;
+            if (addDegree < 0) addDegree += 360;
+            
+            currentRotation += (rounds * 360) + addDegree;
 
             canvas.style.transition = 'transform 5s cubic-bezier(0.12, 0.8, 0.15, 1)';
-            canvas.style.transform = `rotate(${totalDegree}deg)`;
+            canvas.style.transform = `rotate(${currentRotation}deg)`;
 
             let tickCount = 0;
             const tickInterval = setInterval(() => {
@@ -795,7 +808,6 @@
                 const turnText = `الدور على: ${currentPlayer ? currentPlayer.username : '-'}`;
                 document.getElementById('turn-title').innerText = turnText;
                 
-                // نطق اسم صاحب الدور صوتياً عند تغير الدور
                 if (window.lastTurnPlayer !== currentPlayer.username) {
                     window.lastTurnPlayer = currentPlayer.username;
                     speakTurn(currentPlayer.username);
