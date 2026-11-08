@@ -420,6 +420,18 @@
             osc.stop(audioCtx.currentTime + 0.05);
         }
 
+        // دالة نطق اسم اللاعب صوتياً
+        function speakTurn(playerName) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // إيقاف أي صوت سابق
+                const text = `عليك الدور يا ${playerName}`;
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'ar-SA';
+                utterance.rate = 1.0;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
         const categories = {
             romantic: { name: "رومانسي 💖", color: "#ec4899", questions: [
                 "أول مرة حسيت فيها بإعجاب حقيقي تجاه شخص، كانت التفاصيل إيه؟",
@@ -663,7 +675,7 @@
             gameStarted = true;
 
             const randomSliceIndex = Math.floor(Math.random() * wheelSlices.length);
-            const selectedType = wheelSlices[randomSliceIndex].type;
+            const selectedType = wheelSlices[randomSliceIndex].type; // ربط القطاع بالتصنيف بدقة تامة
             const question = getUniqueQuestion(selectedType);
             const player = players[currentTurnIndex].username;
 
@@ -692,7 +704,6 @@
             const numSlices = wheelSlices.length;
             const sliceAngle = 360 / numSlices;
             const targetAngleDeg = 360 - (targetSliceIndex * sliceAngle + sliceAngle / 2);
-            // زيادة عدد اللفات الكاملة لـ 7 لفات لإعطاء شكل تدوير ممتع وطويل (2520 درجة + الاستقرار)
             const totalDegree = 2520 + targetAngleDeg;
 
             canvas.style.transition = 'transform 5s cubic-bezier(0.12, 0.8, 0.15, 1)';
@@ -781,7 +792,15 @@
                 document.getElementById('spin-btn').disabled = true;
             } else {
                 const currentPlayer = players[currentTurnIndex % players.length];
-                document.getElementById('turn-title').innerText = `الدور على: ${currentPlayer ? currentPlayer.username : '-'}`;
+                const turnText = `الدور على: ${currentPlayer ? currentPlayer.username : '-'}`;
+                document.getElementById('turn-title').innerText = turnText;
+                
+                // نطق اسم صاحب الدور صوتياً عند تغير الدور
+                if (window.lastTurnPlayer !== currentPlayer.username) {
+                    window.lastTurnPlayer = currentPlayer.username;
+                    speakTurn(currentPlayer.username);
+                }
+
                 isMyTurn = currentPlayer && currentPlayer.id === peer.id;
                 document.getElementById('spin-btn').disabled = !isMyTurn;
             }
